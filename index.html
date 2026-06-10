@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Business Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#ffffff;--bg2:#f5f5f7;--bg3:#e8e8ed;
+  --text:#1d1d1f;--text2:#6e6e73;--text3:#aeaeb2;
+  --accent:#007aff;--accent2:#34c759;--danger:#ff3b30;
+  --border:#d1d1d6;--r:14px;--r2:10px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;--border:#3a3a3c;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--tg-theme-bg-color,var(--bg));
+  color:var(--tg-theme-text-color,var(--text));
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+}
+.screen{display:none;flex-direction:column;height:100vh;overflow:hidden}
+.screen.on{display:flex}
+.hdr{padding:18px 16px 0;flex-shrink:0}
+.hdr h1{font-size:21px;font-weight:600}
+.hdr p{font-size:13px;color:var(--text2);margin-top:3px}
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;margin-top:12px}
+.tab{flex:1;padding:11px 0;text-align:center;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.body{flex:1;overflow-y:auto;padding:16px;padding-bottom:90px;-webkit-overflow-scrolling:touch}
+.card{background:var(--bg2);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.metric{background:var(--bg2);border-radius:var(--r);padding:14px}
+.metric-val{font-size:28px;font-weight:600}
+.metric-lbl{font-size:12px;color:var(--text2);margin-top:2px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.field input,.field textarea{
+  width:100%;padding:12px;border:1.5px solid var(--border);
+  border-radius:var(--r2);background:var(--bg);color:var(--text);
+  font-size:15px;outline:none;font-family:inherit;transition:border .15s;
+}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{height:76px;resize:none}
+.btn{width:100%;padding:15px;border:none;border-radius:var(--r);font-size:16px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn:active{opacity:.8}
+.btn:disabled{opacity:.5}
+.btn-blue{background:var(--accent);color:#fff}
+.btn-green{background:var(--accent2);color:#fff}
+.btn-gray{background:var(--bg3);color:var(--text)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{flex:1;padding:9px;font-size:13px;border-radius:var(--r2)}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border)}
+.steps{display:flex;gap:6px;justify-content:center;margin-bottom:18px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.3s}
+.dot.on{background:var(--accent);width:22px;border-radius:4px}
+.dot.done{background:var(--accent)}
+.srv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.srv{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;text-align:center;transition:.2s}
+.srv.on{border-color:var(--accent);background:#007aff15}
+.srv-icon{font-size:26px;margin-bottom:6px}
+.srv-name{font-size:13px;font-weight:600}
+.srv-price{font-size:12px;color:var(--text2);margin-top:2px}
+.time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.time{background:var(--bg2);border:2px solid var(--border);border-radius:var(--r2);padding:11px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
+.time.on{border-color:var(--accent);background:#007aff15;color:var(--accent)}
+.time.off{opacity:.3;pointer-events:none}
+.bk{background:var(--bg2);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.bk-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
+.bk-svc{font-weight:600;font-size:15px}
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap}
+.badge-p{background:#007aff20;color:var(--accent)}
+.badge-ok{background:#34c75920;color:var(--accent2)}
+.badge-no{background:#ff3b3020;color:var(--danger)}
+.bk-info{font-size:13px;color:var(--text2);line-height:1.7}
+.bk-btns{display:flex;gap:8px;margin-top:10px}
+.status-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.link-block{background:var(--bg2);border-radius:var(--r);padding:14px;word-break:break-all;font-size:13px;color:var(--accent);font-weight:500;margin-bottom:10px;font-family:ui-monospace,monospace}
+.empty{text-align:center;padding:48px 0;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.banner{background:#FFF3CD;color:#664D03;border-radius:var(--r2);padding:10px 12px;font-size:12px;margin-bottom:12px;line-height:1.5}
+@media(prefers-color-scheme:dark){.banner{background:#3a2f00;color:#ffe69c}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADING ═══ -->
+<div class="screen on" id="s-loading" style="align-items:center;justify-content:center">
+  <div style="text-align:center;color:var(--text3)">
+    <div class="spinner" style="border-color:var(--border);border-top-color:var(--accent);width:28px;height:28px"></div>
+    <div style="margin-top:12px;font-size:13px">Загрузка...</div>
+  </div>
+</div>
+
+<!-- ═══ OWNER ═══ -->
+<div class="screen" id="s-owner">
+  <div class="hdr"><h1 id="o-name">Мой бизнес</h1><p>Панель управления</p></div>
+  <div class="tabs">
+    <div class="tab on" onclick="otab('dash')">Главная</div>
+    <div class="tab"    onclick="otab('bks')">Заявки</div>
+    <div class="tab"    onclick="otab('set')">Настройки</div>
+  </div>
+
+  <div class="body" id="ot-dash">
+    <div class="metrics">
+      <div class="metric"><div class="metric-val" id="m-cl">0</div><div class="metric-lbl">клиентов писало</div></div>
+      <div class="metric"><div class="metric-val" id="m-bk">0</div><div class="metric-lbl">заявок всего</div></div>
+      <div class="metric"><div class="metric-val" id="m-pe">0</div><div class="metric-lbl">ждут ответа</div></div>
+      <div class="metric"><div class="metric-val" id="m-td">0</div><div class="metric-lbl">сегодня</div></div>
+    </div>
+    <div class="status-row">
+      <div class="dot-live"></div>
+      <div><div style="font-weight:500;font-size:14px" id="o-status-name">Бот активен</div>
+           <div style="font-size:12px;color:var(--text2)">AI отвечает клиентам 24/7</div></div>
+    </div>
+    <div class="card-title">Ссылка для клиентов</div>
+    <div class="link-block" id="o-link">—</div>
+    <button class="btn btn-gray" onclick="copyLink()">📋 Скопировать ссылку</button>
+  </div>
+
+  <div class="body" id="ot-bks" style="display:none">
+    <div id="bks-list"></div>
+  </div>
+
+  <div class="body" id="ot-set" style="display:none">
+    <div class="field"><label>Название бизнеса *</label><input id="s-name" placeholder="Барбершоп Blade"></div>
+    <div class="field"><label>Описание (для AI)</label><textarea id="s-desc" placeholder="Мужская парикмахерская. Стрижки, уход за бородой..."></textarea></div>
+    <div class="field"><label>Услуги и цены (каждая с новой строки)</label><textarea id="s-srv" placeholder="Стрижка — 800₽&#10;Бритьё — 600₽&#10;Комплекс — 1200₽"></textarea></div>
+    <div class="field"><label>Адрес</label><input id="s-addr" placeholder="ул. Пушкина, 10"></div>
+    <div class="field"><label>Телефон</label><input id="s-phone" type="tel" placeholder="+7 999 123-45-67"></div>
+    <div class="field"><label>Часы работы</label><input id="s-hrs" placeholder="Пн-Вс 10:00–21:00"></div>
+    <button class="btn btn-blue" id="btn-save" onclick="saveSetup()">Сохранить настройки</button>
+  </div>
+</div>
+
+<!-- ═══ SETUP (новый бизнес) ═══ -->
+<div class="screen" id="s-setup">
+  <div class="hdr"><h1>Создание бота</h1><p>Заполните информацию о бизнесе — это займёт 2 минуты</p></div>
+  <div class="body">
+    <div class="field"><label>Название бизнеса *</label><input id="n-name" placeholder="Барбершоп Blade"></div>
+    <div class="field"><label>Описание (для AI-помощника)</label><textarea id="n-desc" placeholder="Мужская парикмахерская. Стрижки, уход за бородой, бритьё опасной бритвой..."></textarea></div>
+    <div class="field"><label>Услуги и цены (каждая с новой строки)</label><textarea id="n-srv" placeholder="Стрижка — 800₽&#10;Бритьё — 600₽&#10;Комплекс — 1200₽"></textarea></div>
+    <div class="field"><label>Адрес</label><input id="n-addr" placeholder="ул. Пушкина, 10"></div>
+    <div class="field"><label>Телефон</label><input id="n-phone" type="tel" placeholder="+7 999 123-45-67"></div>
+    <div class="field"><label>Часы работы</label><input id="n-hrs" placeholder="Пн-Вс 10:00–21:00"></div>
+  </div>
+  <div class="bottom"><button class="btn btn-blue" id="btn-create" onclick="submitSetup()">Создать бота</button></div>
+</div>
+
+<!-- ═══ CLIENT ═══ -->
+<div class="screen" id="s-client">
+  <div id="c-step1" style="display:none;flex-direction:column;height:100vh">
+    <div class="hdr" style="padding-bottom:12px">
+      <div class="steps"><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div>
+      <h1>Выберите услугу</h1>
+      <p id="c-biz-name"></p>
+    </div>
+    <div class="body"><div class="srv-grid" id="srv-grid"></div></div>
+  </div>
+
+  <div id="c-step2" style="display:none;flex-direction:column;height:100vh">
+    <div class="hdr" style="padding-bottom:12px">
+      <div class="steps"><div class="dot done"></div><div class="dot on"></div><div class="dot"></div></div>
+      <h1>Дата и время</h1>
+    </div>
+    <div class="body">
+      <div class="field"><label>Дата</label><input type="date" id="c-date" onchange="loadTimes()"></div>
+      <div class="card-title">Доступное время</div>
+      <div class="time-grid" id="time-grid"></div>
+    </div>
+    <div class="bottom"><button class="btn btn-blue" id="btn-time" onclick="toStep3()" disabled>Продолжить</button></div>
+  </div>
+
+  <div id="c-step3" style="display:none;flex-direction:column;height:100vh">
+    <div class="hdr" style="padding-bottom:12px">
+      <div class="steps"><div class="dot done"></div><div class="dot done"></div><div class="dot on"></div></div>
+      <h1>Подтверждение</h1>
+    </div>
+    <div class="body">
+      <div class="card" id="c-summary"></div>
+      <div class="field" style="margin-top:12px"><label>Комментарий (необязательно)</label>
+        <textarea id="c-note" placeholder="Например: стрижка без чёлки..."></textarea></div>
+    </div>
+    <div class="bottom"><button class="btn btn-green" id="btn-submit" onclick="submitBooking()">Записаться</button></div>
+  </div>
+</div>
+
+<!-- ═══ ERROR ═══ -->
+<div class="screen" id="s-error" style="align-items:center;justify-content:center;padding:24px">
+  <div style="text-align:center">
+    <div style="font-size:44px;margin-bottom:12px">⚠️</div>
+    <div style="font-size:16px;font-weight:600;margin-bottom:8px">Что-то пошло не так</div>
+    <div style="font-size:13px;color:var(--text2)" id="err-msg">Откройте бота через кнопку «Меню» в Telegram</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════ SETUP ═══════════════════
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// ВАЖНО: эта ссылка должна указывать на твой backend (Railway)
+const API = "__BOT_API_URL__";
+
+const params = new URLSearchParams(location.search);
+const MODE   = params.get('mode') || 'client';
+const BID    = params.get('bid');
+const TG_USER = tg?.initDataUnsafe?.user || null;
+
+let state = { service: null, time: null, ownerData: null };
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id)?.classList.add('on');
+}
+
+function showError(msg) {
+  document.getElementById('err-msg').textContent = msg;
+  show('s-error');
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ═══════════════════ ROUTER ═══════════════════
+async function init() {
+  if (MODE === 'owner') return initOwner();
+  if (MODE === 'setup') return initSetup();
+  return initClient();
+}
+
+// ═══════════════════ OWNER ═══════════════════
+async function initOwner() {
+  if (!TG_USER) return showError('Откройте через кнопку «Меню» в Telegram-боте');
+  try {
+    const res = await api(`/api/owner/${TG_USER.id}`);
+    if (!res.ok) throw new Error(res.error || 'unknown');
+    if (!res.biz) {
+      // У владельца ещё нет бизнеса — отправляем на setup
+      return initSetup();
+    }
+    state.ownerData = res.biz;
+    state.bookings  = res.bookings || [];
+    state.stats     = res.stats || {};
+    state.link      = res.link;
+
+    document.getElementById('o-name').textContent = res.biz.name;
+    document.getElementById('o-status-name').textContent = res.biz.name + ' · Активен';
+    document.getElementById('o-link').textContent = res.link;
+    document.getElementById('m-cl').textContent = state.stats.clients ?? 0;
+    document.getElementById('m-bk').textContent = state.stats.total ?? 0;
+    document.getElementById('m-pe').textContent = state.stats.pending ?? 0;
+    document.getElementById('m-td').textContent = state.stats.today ?? 0;
+
+    prefillSettings(res.biz);
+    show('s-owner');
+  } catch (e) {
+    showError('Не удалось загрузить данные: ' + e.message);
+  }
+}
+
+function prefillSettings(b) {
+  document.getElementById('s-name').value  = b.name || '';
+  document.getElementById('s-desc').value  = b.description || '';
+  document.getElementById('s-srv').value   = b.services || '';
+  document.getElementById('s-addr').value  = b.address || '';
+  document.getElementById('s-phone').value = b.phone || '';
+  document.getElementById('s-hrs').value   = b.working_hours || '';
+}
+
+function otab(t) {
+  ['dash','bks','set'].forEach((k,i) => {
+    document.getElementById('ot-'+k).style.display = k===t ? 'block':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('on', k===t);
+  });
+  if (t === 'bks') renderBookings();
+}
+
+function renderBookings() {
+  const el = document.getElementById('bks-list');
+  const bookings = state.bookings || [];
+  if (!bookings.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Заявок пока нет<br><span style="font-size:12px">Поделитесь ссылкой с клиентами</span></div>';
+    return;
+  }
+  const labels = {pending:'Новая', confirmed:'Подтверждена', cancelled:'Отменена'};
+  const cls    = {pending:'badge-p', confirmed:'badge-ok', cancelled:'badge-no'};
+  el.innerHTML = bookings.map(b => `
+    <div class="bk">
+      <div class="bk-top">
+        <div class="bk-svc">${escapeHtml(b.service)}</div>
+        <span class="badge ${cls[b.status]||'badge-p'}">${labels[b.status]||'Новая'}</span>
+      </div>
+      <div class="bk-info">
+        👤 ${escapeHtml(b.user_name||'')}<br>
+        📅 ${b.booking_date} в ${b.booking_time}
+        ${b.note ? '<br>💬 '+escapeHtml(b.note) : ''}
+      </div>
+      ${b.status==='pending' ? `
+      <div class="bk-btns">
+        <button class="btn btn-green btn-sm" onclick="setBkStatus(${b.id},'confirmed',this)">✅ Подтвердить</button>
+        <button class="btn btn-danger btn-sm" onclick="setBkStatus(${b.id},'cancelled',this)">❌ Отменить</button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+async function setBkStatus(id, status, btn) {
+  btn.closest('.bk-btns').innerHTML = '<div class="spinner" style="border-color:var(--border);border-top-color:var(--accent)"></div>';
+  try {
+    await api('/api/booking_status', {method:'POST', body: JSON.stringify({booking_id:id, status})});
+    state.bookings = state.bookings.map(b => b.id===id ? {...b, status} : b);
+    renderBookings();
+    // обновляем счётчик ожидающих
+    const pending = state.bookings.filter(b=>b.status==='pending').length;
+    document.getElementById('m-pe').textContent = pending;
+  } catch(e) {
+    tg?.showAlert?.('Ошибка: '+e.message) || alert('Ошибка: '+e.message);
+  }
+}
+
+function copyLink() {
+  const txt = document.getElementById('o-link').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(()=> tg?.showAlert?.('Скопировано!') || alert('Скопировано!'));
+  } else {
+    tg?.showAlert?.(txt) || alert(txt);
+  }
+}
+
+async function saveSetup() {
+  const name = document.getElementById('s-name').value.trim();
+  if (!name) return tg?.showAlert?.('Введите название') || alert('Введите название');
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Сохраняю...';
+
+  const data = {
+    action: 'setup',
+    owner_id: TG_USER.id,
+    name,
+    description: document.getElementById('s-desc').value.trim(),
+    services:    document.getElementById('s-srv').value.trim(),
+    address:     document.getElementById('s-addr').value.trim(),
+    phone:       document.getElementById('s-phone').value.trim(),
+    hours:       document.getElementById('s-hrs').value.trim(),
+  };
+  try {
+    const res = await api('/api/setup', {method:'POST', body: JSON.stringify(data)});
+    if (res.ok) {
+      tg?.showAlert?.('✅ Сохранено!') || alert('✅ Сохранено!');
+      document.getElementById('o-name').textContent = name;
+      document.getElementById('o-status-name').textContent = name + ' · Активен';
+      document.getElementById('o-link').textContent = res.link || document.getElementById('o-link').textContent;
+    } else {
+      throw new Error(res.error || 'unknown');
+    }
+  } catch(e) {
+    tg?.showAlert?.('Ошибка: '+e.message) || alert('Ошибка: '+e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Сохранить настройки';
+}
+
+// ═══════════════════ SETUP (новый бизнес) ═══════════════════
+function initSetup() {
+  if (!TG_USER) return showError('Откройте через кнопку «Меню» в Telegram-боте');
+  show('s-setup');
+}
+
+async function submitSetup() {
+  const name = document.getElementById('n-name').value.trim();
+  if (!name) return tg?.showAlert?.('Введите название бизнеса') || alert('Введите название бизнеса');
+
+  const btn = document.getElementById('btn-create');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Создаю...';
+
+  const data = {
+    action: 'setup',
+    owner_id: TG_USER.id,
+    name,
+    description: document.getElementById('n-desc').value.trim(),
+    services:    document.getElementById('n-srv').value.trim(),
+    address:     document.getElementById('n-addr').value.trim(),
+    phone:       document.getElementById('n-phone').value.trim(),
+    hours:       document.getElementById('n-hrs').value.trim(),
+  };
+
+  try {
+    const res = await api('/api/setup', {method:'POST', body: JSON.stringify(data)});
+    if (res.ok) {
+      tg?.showAlert?.('🎉 Готово! Ссылка для клиентов отправлена вам в чат.') ||
+        alert('🎉 Готово! Проверьте сообщения от бота.');
+      tg?.close?.();
+    } else {
+      throw new Error(res.error || 'unknown');
+    }
+  } catch(e) {
+    tg?.showAlert?.('Ошибка: '+e.message) || alert('Ошибка: '+e.message);
+    btn.disabled = false; btn.textContent = 'Создать бота';
+  }
+}
+
+// ═══════════════════ CLIENT ═══════════════════
+async function initClient() {
+  if (!BID) return showError('Не указан бизнес. Перейдите по ссылке вашего заведения.');
+  try {
+    const res = await api(`/api/biz/${BID}`);
+    if (!res.ok) throw new Error('Бизнес не найден');
+    state.biz = res.biz;
+    document.getElementById('c-biz-name').textContent = res.biz.name;
+    renderServices(res.biz.services || 'Консультация — бесплатно');
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('c-date').min   = today;
+    document.getElementById('c-date').value = today;
+    loadTimes();
+    document.getElementById('c-step1').style.display = 'flex';
+    show('s-client');
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+function renderServices(text) {
+  const icons = ['✂️','🪒','💈','💆','💅','🧖','🦷','💇','🏋️','🎨','📋','⭐'];
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean).slice(0, 10);
+  document.getElementById('srv-grid').innerHTML = lines.map((l,i) => {
+    const parts = l.split('—');
+    const name  = parts[0].trim();
+    const price = parts[1] ? parts[1].trim() : '';
+    return `<div class="srv" onclick="pickService(this, ${i})">
+      <div class="srv-icon">${icons[i % icons.length]}</div>
+      <div class="srv-name">${escapeHtml(name)}</div>
+      ${price ? `<div class="srv-price">${escapeHtml(price)}</div>` : ''}
+    </div>`;
+  }).join('');
+  state.serviceLines = lines;
+}
+
+function pickService(el, i) {
+  document.querySelectorAll('.srv').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+  state.service = state.serviceLines[i];
+  setTimeout(() => {
+    document.getElementById('c-step1').style.display = 'none';
+    document.getElementById('c-step2').style.display = 'flex';
+  }, 200);
+}
+
+function loadTimes() {
+  const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+  const now = new Date();
+  const sel = document.getElementById('c-date').value;
+  const isToday = sel === now.toISOString().split('T')[0];
+  document.getElementById('time-grid').innerHTML = slots.map(t => {
+    const past = isToday && parseInt(t) <= now.getHours();
+    return `<div class="time${past?' off':''}" onclick="pickTime(this,'${t}')">${t}</div>`;
+  }).join('');
+  state.time = null;
+  document.getElementById('btn-time').disabled = true;
+}
+
+function pickTime(el, t) {
+  document.querySelectorAll('.time').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  state.time = t;
+  document.getElementById('btn-time').disabled = false;
+}
+
+function toStep3() {
+  if (!state.time) return;
+  document.getElementById('c-step2').style.display = 'none';
+  document.getElementById('c-step3').style.display = 'flex';
+  const date = document.getElementById('c-date').value;
+  document.getElementById('c-summary').innerHTML = `
+    <div style="font-size:14px;line-height:2.2">
+      <b>Услуга:</b> ${escapeHtml(state.service)}<br>
+      <b>Дата:</b> ${date}<br>
+      <b>Время:</b> ${state.time}
+    </div>`;
+}
+
+async function submitBooking() {
+  if (!TG_USER) return showError('Откройте через кнопку «Записаться» в Telegram-боте');
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Отправляю...';
+
+  const data = {
+    action: 'booking',
+    business_id: BID,
+    user_id: TG_USER.id,
+    user_name: [TG_USER.first_name, TG_USER.last_name].filter(Boolean).join(' '),
+    username: TG_USER.username,
+    service: state.service,
+    date: document.getElementById('c-date').value,
+    time: state.time,
+    note: document.getElementById('c-note').value.trim(),
+  };
+
+  try {
+    const res = await api('/api/booking', {method:'POST', body: JSON.stringify(data)});
+    if (res.ok) {
+      tg?.showAlert?.('✅ Запись отправлена! Подтверждение придёт в чат.') ||
+        alert('✅ Запись отправлена!');
+      tg?.close?.();
+    } else {
+      throw new Error(res.error || 'unknown');
+    }
+  } catch(e) {
+    tg?.showAlert?.('Ошибка: '+e.message) || alert('Ошибка: '+e.message);
+    btn.disabled = false; btn.textContent = 'Записаться';
+  }
+}
+
+// ═══════════════════ UTILS ═══════════════════
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+init();
+</script>
+</body>
+</html>
