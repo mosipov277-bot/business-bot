@@ -209,7 +209,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
 // ВАЖНО: эта ссылка должна указывать на твой backend (Railway)
-const API = "__BOT_API_URL__";
+const API = "https://business-bot-production-e1a9.up.railway.app";
 
 const params = new URLSearchParams(location.search);
 const MODE   = params.get('mode') || 'client';
